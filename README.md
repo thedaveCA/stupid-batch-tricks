@@ -9,6 +9,7 @@ Collection of Windows Batch scripts written in the 2020s. Some scripts are usefu
 | [/](#main-scripts) | The main scripts that do something "useful".                       |
 | [Helpers](#helpers) | Useful batch scripts that can be included in other batch scripts. |
 | [Pointless](#pointless) | Pointless stuff that probably shouldn't exist.                |
+| [Snippets](#snippets) | Snippets of reusable code                                       |
 
 ## Main Scripts
 
@@ -37,3 +38,13 @@ Scripts that serve no practical purpose.
 |----------------|------------------------------------------------------------|
 | `jump.cmd`     | A batch "solution" for the "Jumping Game" problem.         |
 | `snake.cmd`    | Robert F Van Etta III 2018's Windows 10 Console Ansi Demo. |
+
+## Snippets
+
+Snippets of reusable code
+
+| Filename       | Description                                                |
+|--------------------|--------------------------------------------------------|
+| `fileorfolder.cmd` | Check if you have a folder, file, or neither           |
+
+| 
