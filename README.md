@@ -14,7 +14,7 @@ Collection of Windows Batch scripts written in the 2020s. Some scripts are usefu
 
 | Filename       | Description                             |
 |----------------|-----------------------------------------|
-| `~.cmd`        | Change directory to the user's home.    |
+| `cdd.cmd`      | Change drive+directory, or ~ or :keyword |
 | `delay.cmd`    | Pause script execution for a defined number of seconds. |
 
 ## Helpers
