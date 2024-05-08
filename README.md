@@ -2,6 +2,14 @@
 
 Collection of Windows Batch scripts written in the 2020s. Some scripts are useful, others are pointless. While batch scripts are _never_ the best solution for many tasks, I've been writing them since the 1990s, and I'm not going to stop now.
 
+## License
+
+_Mozilla Public License Version 2.0_ for the code I've written. Inspiration and code snippets from other sources are noted in the scripts and may override this license.
+
+Summarized: You can use, modify, and distribute this code as long as you include the original license and any attributions.
+
+See the [LICENSE.txt](LICENSE.txt) file for the full text, or visit [https://choosealicense.com/licenses/mpl-2.0/](https://choosealicense.com/licenses/mpl-2.0/).
+
 ## Directory Structure
 
 | Directory                   | Description                                               |
