@@ -46,5 +46,4 @@ Snippets of reusable code
 | Filename       | Description                                                |
 |--------------------|--------------------------------------------------------|
 | `fileorfolder.cmd` | Check if you have a folder, file, or neither           |
-
-| 
+| 'padding.cmd`      | Add padding to, or truncate, a string                  |
