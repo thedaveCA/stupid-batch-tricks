@@ -1,7 +1,7 @@
 @echo off
-:: ANSI.cmd - detect ANSI support and set ANSI variables for use elsewhere
-:: Last updated: 2024-04-09
-::
+:: ANSI.cmd - detect ANSI support and set ANSI variables
+:: Last updated: 2024-05-08
+:: 
 :: ############################### INSTRUCTIONS ###############################
 ::
 :: A script check can load ANSI.cmd if it exists in the same directory:
@@ -10,12 +10,19 @@
 :: Or from a helpers directory: 
 :: if exist "%~dp0Helpers\ANSI.cmd" call "%~dp0Helpers\ANSI.cmd"
 ::
+:: To use the ANSI variables, load ANSI.cmd at the start of your script. 
+:: This script attempts to check if it was run before, and if so, skips most of
+:: the processing. It's not instant, but we are in GHz territory, not MHz.
+::
 :: ################################ REFERENCES ################################
 ::
 :: https://learn.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences#text-modification
 ::
+:: ############################################################################
+:: ################## DON'T CHANGE ANYTHING BELOW THIS LINE ###################
+:: ############################################################################
 
-:: If the first argument is empty, and we have ANSI_header already set, bail quickly.
+:: If the first argument is empty, check if we have run before and bail quickly.
 if [%~1]==[] (
     if defined ANSI_header (
         goto :END
@@ -28,7 +35,7 @@ if /I "%~1"=="--help" (
     echo %ANSI_header%%~nx0%ANSI_normal% - Detect ANSI support and set ANSI variables.
     echo.
     echo USAGE:
-    echo   %ANSI_fg_bright_white%%~nx0 [OPTIONS]%ANSI_normal%
+    echo   %ANSI_emphasis%%~nx0 [OPTIONS]%ANSI_normal%
     echo.
     echo OPTIONS:
     echo   %ANSI_emphasis%--help%ANSI_normal%          Display this help message.
@@ -36,7 +43,7 @@ if /I "%~1"=="--help" (
     echo   %ANSI_emphasis%--ansi%ANSI_normal%          Enable ANSI support.
     echo   %ANSI_emphasis%--plain%ANSI_normal%         Disable ANSI support.
     echo   %ANSI_emphasis%--test%ANSI_normal%          Show example text in various formats.
-    echo   %ANSI_emphasis%--dump%ANSI_normal%          Dump all ANSI_ ANSI variables from the environment
+    echo   %ANSI_emphasis%--dump%ANSI_normal%          Show all ANSI_ ANSI variables from the environment.
     echo.
     echo EXAMPLES:
     echo   %~nx0 --help
@@ -50,10 +57,9 @@ if /I "%~1"=="--help" (
     echo.
     echo NOTES:
     echo   If no arguments provided, ANSI will be autodetected.
-    echo   %ANSI_fg_bright_white%--ansi and %ANSI_fg_bright_white%--plain%ANSI_normal% can be used to override detection.
-    echo   %ANSI_fg_bright_white%--test%ANSI_normal% must be last if combined with other arguments.
+    echo   %ANSI_emphasis%--ansi and %ANSI_emphasis%--plain%ANSI_normal% can be used to override detection.
+    echo   %ANSI_emphasis%--test%ANSI_normal% must be last if combined with other arguments.
     echo   Argument parsing is limited, and no attempt at validation is made.
-    echo   If ANSI support is not detected, some ANSI_LOG_* variables will be set to plaintext
     echo.
     shift
     goto :END
@@ -157,6 +163,49 @@ if defined BATCH_ANSI_SUPPORTED (
     set ANSI_bg_bright_white=%ANSI_ESC%[1;47m
 
     set ANSI_normal=%ANSI_ESC%[0m
+    set ANSI_clear_line=%ANSI_ESC%[2K
+    set ANSI_clear_line_right=%ANSI_ESC%[0K
+    set ANSI_clear_line_left=%ANSI_ESC%[1K
+    set ANSI_clear_screen=%ANSI_ESC%[2J
+    set ANSI_clear_screen_down=%ANSI_ESC%[0J
+    set ANSI_clear_screen_up=%ANSI_ESC%[1J
+    set ANSI_cursor_move_home=%ANSI_ESC%[H
+    set ANSI_cursor_move_up=%ANSI_ESC%[A
+    set ANSI_cursor_move_down=%ANSI_ESC%[B
+    set ANSI_cursor_move_forward=%ANSI_ESC%[C
+    set ANSI_cursor_move_back=%ANSI_ESC%[D
+    set ANSI_cursor_next_line=%ANSI_ESC%[E
+    set ANSI_cursor_prev_line=%ANSI_ESC%[F
+    set ANSI_cursor_hide=%ANSI_ESC%[?25l
+    set ANSI_cursor_show=%ANSI_ESC%[?25h
+    set ANSI_cursor_position_save=%ANSI_ESC%[s
+    set ANSI_cursor_position_restore=%ANSI_ESC%[u
+)
+
+:: Aliases
+if defined BATCH_ANSI_SUPPORTED (
+    :: Handy
+    set ANSI_curson_move_left=%ANSI_cursor_move_back%
+    set ANSI_cursor_move_right=%ANSI_cursor_move_forward%
+    set ANSI_reset=%ANSI_normal%
+
+    :: Legacy support for older scripts that use the ANSI_* variables directly
+    set ANSI_black=%ANSI_fg_black%
+    set ANSI_red=%ANSI_fg_red%
+    set ANSI_green=%ANSI_fg_green%
+    set ANSI_yellow=%ANSI_fg_yellow%
+    set ANSI_blue=%ANSI_fg_blue%
+    set ANSI_magenta=%ANSI_fg_magenta%
+    set ANSI_cyan=%ANSI_fg_cyan%
+    set ANSI_white=%ANSI_fg_white%
+    set ANSI_bright_black=%ANSI_fg_bright_black%
+    set ANSI_bright_red=%ANSI_fg_bright_red%
+    set ANSI_bright_green=%ANSI_fg_bright_green%
+    set ANSI_bright_yellow=%ANSI_fg_bright_yellow%
+    set ANSI_bright_blue=%ANSI_fg_bright_blue%
+    set ANSI_bright_magenta=%ANSI_fg_bright_magenta%
+    set ANSI_bright_cyan=%ANSI_fg_bright_cyan%
+    set ANSI_bright_white=%ANSI_fg_bright_white%
 )
 
 if defined BATCH_ANSI_SUPPORTED (
