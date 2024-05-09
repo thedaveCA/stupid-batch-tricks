@@ -184,10 +184,11 @@ if defined BATCH_ANSI_SUPPORTED (
 
 :: Aliases
 if defined BATCH_ANSI_SUPPORTED (
-    :: Handy
     set ANSI_curson_move_left=%ANSI_cursor_move_back%
     set ANSI_cursor_move_right=%ANSI_cursor_move_forward%
     set ANSI_reset=%ANSI_normal%
+    ::set prompt=%USERNAME%@%COMPUTERNAME%:%ANSI_ESC%%ANSI_fg_green%cmd.exe %ANSI_fg_red%$+%ANSI_fg_blue%$P$G%ANSI_normal%
+    set prompt=%ANSI_ESC%%ANSI_fg_green%cmd.exe %ANSI_fg_bright_yellow%%ANSI_bg_blue%$+%ANSI_normal%%ANSI_fg_bright_cyan%$M%ANSI_fg_blue%$P$G%ANSI_normal%
 
     :: Legacy support for older scripts that use the ANSI_* variables directly
     set ANSI_black=%ANSI_fg_black%
