@@ -7,7 +7,9 @@ for /f "skip=1 delims=" %%a in ('wmic os get LocalDateTime') do if not defined m
 set "BATCH_TIMESTAMP=%mydate:~0,4%%mydate:~4,2%%mydate:~6,2%-%mydate:~8,2%%mydate:~10,2%%mydate:~12,2%-%mydate:~15,3%"
 set mydate=
 
-if /I "%~1"=="--help" (
+if /I "%~1"=="--verbose" (
+    echo %BATCH_TIMESTAMP%
+) else if /I "%~1"=="--help" (
     echo.
     echo %ANSI_header%timestamp.cmd%ANSI_normal% - Generate a unique BATCH_TIMESTAMP from current date and time
     echo.
@@ -17,9 +19,10 @@ if /I "%~1"=="--help" (
     echo.
     echo Options: 
     echo   %ANSI_emphasis%--help%ANSI_normal%  - Display this help message
+    echo   %ANSI_emphasis%--verbose%ANSI_normal% - Display the generated timestamp
     echo.
     echo Result: 
-    echo   BATCH_TIMESTAMP=%BATCH_TIMESTAMP%
+    echo   %ANSI_emphasis%BATCH_TIMESTAMP=%BATCH_TIMESTAMP%%ANSI_normal%
     echo.
-    exit /b 0
 )
+exit /b 0
