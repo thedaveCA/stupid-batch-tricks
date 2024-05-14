@@ -2,12 +2,13 @@
 :: timestamp.cmd - Generate a unique BATCH_TIMESTAMP from current date and time
 :: Last updated: 2024-04-09
 
-set mydate=
-for /f "skip=1 delims=" %%a in ('wmic os get LocalDateTime') do if not defined mydate set "mydate=%%a"
-set "BATCH_TIMESTAMP=%mydate:~0,4%%mydate:~4,2%%mydate:~6,2%-%mydate:~8,2%%mydate:~10,2%%mydate:~12,2%-%mydate:~15,3%"
-set mydate=
+set BATCH_TIMESTAMP=
+for /f "skip=1 delims=" %%a in ('wmic os get LocalDateTime') do if not defined BATCH_TIMESTAMP set "BATCH_TIMESTAMP=%%a"
+set "BATCH_TIMESTAMP=%BATCH_TIMESTAMP:~0,4%%BATCH_TIMESTAMP:~4,2%%BATCH_TIMESTAMP:~6,2%-%BATCH_TIMESTAMP:~8,2%%BATCH_TIMESTAMP:~10,2%%BATCH_TIMESTAMP:~12,2%-%BATCH_TIMESTAMP:~15,3%"
 
-if /I "%~1"=="--help" (
+if /I "%~1"=="--verbose" (
+    echo %BATCH_TIMESTAMP%
+) else if /I "%~1"=="--help" (
     echo.
     echo %ANSI_header%timestamp.cmd%ANSI_normal% - Generate a unique BATCH_TIMESTAMP from current date and time
     echo.
@@ -17,9 +18,10 @@ if /I "%~1"=="--help" (
     echo.
     echo Options: 
     echo   %ANSI_emphasis%--help%ANSI_normal%  - Display this help message
+    echo   %ANSI_emphasis%--verbose%ANSI_normal% - Display the generated timestamp
     echo.
     echo Result: 
-    echo   BATCH_TIMESTAMP=%BATCH_TIMESTAMP%
+    echo   %ANSI_emphasis%BATCH_TIMESTAMP=%BATCH_TIMESTAMP%%ANSI_normal%
     echo.
-    exit /b 0
 )
+exit /b 0
