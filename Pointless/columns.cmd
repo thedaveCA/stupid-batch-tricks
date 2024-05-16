@@ -31,7 +31,7 @@
 ::   codes, unicode, double-width characters, combining characters, zero-width
 ::   characters, control characters, emoji, RTL text, CJK text, tabs, line
 ::   breaks, custom wrapping, etc.
-:: - Column width calculation does not handle console buffer or window size.
+:: - Column width calculation does not consider console buffer or window size.
 ::
 :: - Maximum width for columns could be useful. Truncating text is easy.
 ::   Deciding what to truncate, when, and why? Not so easy.
@@ -133,7 +133,7 @@ call %~dp0..\Helpers\ANSI.cmd
 call :rowCounter
 call :columnCounter
 call :columnCalculation
-call :renderTable
+call :renderTableData
 
 goto :eof
 
@@ -199,7 +199,7 @@ goto :eof
 :: Text can be written left-to-right or right-to-left. This is not about
 :: character direction, just the order that the columns are printed in, which
 :: can be useful for debugging.
-:renderTable
+:renderTableData
     for /L %%r in (0,1,%rowCount%) do (
         set tempRowText=
         if not %%r == %rowCount% (
