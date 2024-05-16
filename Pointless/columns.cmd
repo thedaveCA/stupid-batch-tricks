@@ -70,14 +70,17 @@ setlocal EnableDelayedExpansion
 
 call %~dp0..\Helpers\ANSI.cmd
 
+set columnPadding=2
+
+set rowCount=0
+set columnCount=0
+
 ::set columnWidth[0]=3
 :: set columnWidth[1]=10
 set columnWidth[2]=15
 :: set columnWidth[3]=2
 :: set columnWidth[4]=5
 
-set rowCount=0
-set columnCount=0
 
 set field[0,0]=A
 set field[0,1]=Bb
@@ -95,6 +98,8 @@ set "field[3,4]=     "
 set "field[3,5]=hello there how are     you?"
 set field[4,8]=X
 set field[5,0]=Z
+
+
 
 :: Subroutines
 call %~dp0..\Helpers\ANSI.cmd
@@ -137,18 +142,17 @@ goto :eof
 :: We will only increase the width of a column, never decrease it, honoring 
 :: any values set externally, where applicable.
 :columnCalculation
-    set columnNextStart=0
-    set columnPadding=2
+    set tempColumnNextStart=0
 
     for /l %%c in (0,1,%columnCount%) do (
-        set columnStart[%%c]=!columnNextStart!
+        set columnStart[%%c]=!tempColumnNextStart!
         set /a columnWidth[%%c]+=0
         for /l %%r in (0,1,%rowCount%) do (
             if defined field[%%r,%%c] (
                 call :charCounter !field[%%r,%%c]!
                 if !charCount! GTR !columnWidth[%%c]! set columnWidth[%%c]=!charCount!
             )
-            set /a columnNextStart+=!columnWidth[%%c]!+!columnPadding!
+            set /a tempColumnNextStart+=!columnWidth[%%c]!+!columnPadding!
         )
     )
     exit /b 0
