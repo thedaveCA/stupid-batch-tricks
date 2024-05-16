@@ -4,13 +4,12 @@
 :: insane enough to code it up? Oh, right, me. I'm insane.
 ::
 :: This script will take a 2D array (yes, this is batch, yes I said array) of
-:: strings and print them in columns.
+:: strings and print them in dynamically sized columns.
 :: 
 :: - It will calculate the width of each column.
 :: - It will also allow you to set the minimum width of a column manually.
 :: - It will sometimes even display them correctly.
-:: - Right now there is no maximum width for a column.
-:: - If you exceed the console width, well, you get what is coming to you.
+:: - There is no maximum width, try to not exceed the console width.
 :: - It will not handle strings of only spaces, because batch.
 ::
 :: Should you do this? No. But you could, and this is a proof of concept.
@@ -18,52 +17,30 @@
 :: Please don't use this in production. Please don't use batch in production.
 :: (says the guy writing batch in 2024).
 ::
-:: Jeebus, even ChatGPT is telling me to stop using batch. People say AI
-:: halucinates, and maybe it does, but when it's right, it's right.
-
 :: Is there like a reverse-MIT license, where you're not allowed to use this
 :: code for anything, and if you do you're forbidden from giving me credit?
-:: I should look into that.
 
 :: TODO, stuff that is possibly broken, maybe could be improved?
 :: - Column width calculation is not perfect, but it's close enough.
-:: - Column width calculation does not handle strings of only spaces, ANSI
-::   codes, unicode, double-width characters, combining characters, zero-width
-::   characters, control characters, emoji, RTL text, CJK text, tabs, line
-::   breaks, custom wrapping, etc.
+:: - Column width calculation does not handle strings of only spaces.
 :: - Column width calculation does not consider console buffer or window size.
 ::
 :: - Maximum width for columns could be useful. Truncating text is easy.
 ::   Deciding what to truncate, when, and why? Not so easy.
-::
-:: - If we had that, maybe we could check the console width and if we're
-::   generating a table that is too wide... ??? I dunno. Who cares.
 :: 
-:: - It would be possible to wrap individual fields, but that would be a lot
-::   of work for something that is already a lot of work. And it would be
-::   ugly. Ugly code, ugly to use. Ugly all around. Like really, really ugly.
+:: - It would be possible to wrap individual fields into variable-height rows?
 ::   Think about it, this is batch and we have a 2D array. There's no way to
 ::   manipulate arrays, so... Add a dimension just to hold wrapped text? lol.
-::   I'm not doing that. I'm not. I'm not. I'm not. I'm not. I'm not. I'm not.
-::   And if I do, I'm not. I'm not. I'm not. I'm not. I'm not. I'm not. I'm not.
-::   You know how LLMs sometimes repeat themselves? I get it now. I really do.
-::   I'm not. I'm not. I'm not. I'm really not. I'm not. I'm not. I'm not.
-::   Except I might, because it would actually be a lot easier than it sounds.
 ::
-:: - ANSI escape codes are not handled in the column width calculation
-::   or the rendering. This is a big deal if you're using them. I guess I
-::   could add field-based formatting. But I'm not writing a damn ANSI parser.
-::   But if I added style support then I could add a bug that causes stuff to
-::   blink instead of the defined style. Everybody loves blinking text.
+::   Field-based formatting could be fun. Or column/row highlights?
 ::
-:: - Right now I just wrap the text in braces because it was helpful to 
-::   visualize during development. I'd like to add some kind of formatting
-::   Maybe a table-left-character, field separator, table-right-character?
+:: - Frame drawing could be fun and useful. Actually it would be fun to draw
+::   a frame around the table separate from the actual data.
 ::
-:: - Oh and you need ANSI, like for real. If you want a version that uses
-::   spaces instead of ANSI, go do it. I won't stop you. If there was a god,
-::   they would stop you. But this abomination exists, which I think is pretty
-::   good evidence that there is no god. Or that god is a sadist.
+:: - Remove references to "fun" in the comments. This is not fun. This is batch.
+::
+:: - Once in a while setlocal just... Fails. And all the temp variables end up
+::   in the environment. I'm not sure why. Maybe add some error checking?
 ::
 
 setlocal EnableDelayedExpansion
@@ -71,34 +48,41 @@ setlocal EnableDelayedExpansion
 :: ############################################################################
 :: ############################## CONFIGURATION ###############################
 :: ############################################################################
+::
+:: Row and column counts and widths are treated as minimums, and are calculated
+:: at runtime. Setting rowCount and columnCount will have a minor performance
+:: improvement, but are not required, and longer or wider tables are allowed.
+::
+:: Entirely blank rows or columns will end the table, unless you set rowCount
+:: and columnCount to include them.
+::
+:: If you set columnWidth, it will be used as a minimum width for that column.
+:: Wider columns will be calculated at runtime.
+::
 
-:: Padding between columns
+:: Padding (Spaces) between columns
 set columnPadding=2
 
-:: Row and column counts and widthes are minimumes, and will be calculated
-:: at runtime. Setting rowCount and columnCount will speed up calculations.
-:: If you set columnWidth, it will be used as a minimum width for that column,
-:: but will be overridden if the calculated width is greater.
-
-:: Minimum rowCount and columnCount.
+:: (Optional) Minimum rowCount and columnCount.
 set rowCount=0
 set columnCount=0
 
-:: Set minimum column widths.
-::set columnWidth[0]=3
-::set columnWidth[1]=10
-::set columnWidth[2]=15
-::set columnWidth[3]=2
-::set columnWidth[4]=5
-
-:: The script will parse the field array and calculate the column widths, then
-:: render the columns. The field array is a 2D array of strings. Fields can be
-:: blank, but an entirely blank column or an entirely blank row will end unless
-:: you set rowCount and columnCount manually.
+:: (Optional) Set minimum column widths.
+set columnWidth[0]=5
+set columnWidth[1]=0
+::set columnWidth[2]=
+::set columnWidth[3]=
+::set columnWidth[4]=
 
 :: ############################################################################
 :: ################################### DATA ###################################
 :: ############################################################################
+::
+:: The script will parse the field array and calculate the column widths, then
+:: render the columns. The field array is a 2D array of strings. Fields can be
+:: blank, but an entirely blank column or an entirely blank row will end the
+:: table. Fields can be omitted or left blank, "jagged" tables are allowed.
+::
 
 set field[0,0]=A
 set field[0,1]=Bb
