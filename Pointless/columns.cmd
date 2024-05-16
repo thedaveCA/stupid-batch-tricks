@@ -68,19 +68,37 @@
 
 setlocal EnableDelayedExpansion
 
-call %~dp0..\Helpers\ANSI.cmd
+:: ############################################################################
+:: ############################## CONFIGURATION ###############################
+:: ############################################################################
 
+:: Padding between columns
 set columnPadding=2
 
+:: Row and column counts and widthes are minimumes, and will be calculated
+:: at runtime. Setting rowCount and columnCount will speed up calculations.
+:: If you set columnWidth, it will be used as a minimum width for that column,
+:: but will be overridden if the calculated width is greater.
+
+:: Minimum rowCount and columnCount.
 set rowCount=0
 set columnCount=0
 
+:: Set minimum column widths.
 ::set columnWidth[0]=3
-:: set columnWidth[1]=10
-set columnWidth[2]=15
-:: set columnWidth[3]=2
-:: set columnWidth[4]=5
+::set columnWidth[1]=10
+::set columnWidth[2]=15
+::set columnWidth[3]=2
+::set columnWidth[4]=5
 
+:: The script will parse the field array and calculate the column widths, then
+:: render the columns. The field array is a 2D array of strings. Fields can be
+:: blank, but an entirely blank column or an entirely blank row will end unless
+:: you set rowCount and columnCount manually.
+
+:: ############################################################################
+:: ################################### DATA ###################################
+:: ############################################################################
 
 set field[0,0]=A
 set field[0,1]=Bb
@@ -92,29 +110,37 @@ set field[1,3]=d
 set field[2,0]=012345678
 set field[2,1]=01234567
 set field[2,2]=0123456
-:: Omit field [3,
 set "field[3,3]= x    x "
 set "field[3,4]=     "
 set "field[3,5]=hello there how are     you?"
 set field[4,8]=X
 set field[5,0]=Z
 
+:: ############################################################################
+:: ############################################################################
+:: ############################################################################
 
+:: ANSI escape codes are required. Offloading this to a helper script.
+if not defined ANSI_header if not exist %~dp0..\Helpers\ANSI.cmd (
+    echo ANSI.cmd not found. It is absolutely required for this script to run.
+    exit /b 1
+) else call %~dp0..\Helpers\ANSI.cmd
 
 :: Subroutines
 call %~dp0..\Helpers\ANSI.cmd
 
+:: Main
 call :rowCounter
 call :columnCounter
 call :columnCalculation
-call :renderColumns
+call :renderTable
 
 goto :eof
 
 :: Subroutines
 
 :: Here we count the number of rows, starting at the existing rowCount (if any)
-:: We assume that if we encounter a blank row, we have reached the end of the data
+:: Counting stops when we hit a blank row.
 :rowCounter
     set /a rowCount+=0
     set | findstr /b /c:"field[!rowCount!," > nul
@@ -125,8 +151,7 @@ goto :eof
     exit /b 0
 
 :: Here we count the number of columns, starting at the existing columnCount (if any)
-:: Empty columns are ignored, subsequent columns are handled properly.
-:: As noted above, a completely empty row ends processing.
+:: Counting stops when we hit a blank column.
 :columnCounter
     set /a columnCount+=0
     for /l %%r in (0,1,%rowCount%) do (
@@ -138,9 +163,9 @@ goto :eof
     set /a columnCount+=1
     exit /b 0
 
-:: Here we calculate the column widths and starting positions for each column
-:: We will only increase the width of a column, never decrease it, honoring 
-:: any values set externally, where applicable.
+:: Here we calculate the start point and width of each column. We assume that
+:: the columnPadding has been set. We also assume that the rowCount and
+:: columnCount have been set.
 :columnCalculation
     set tempColumnNextStart=0
 
@@ -157,9 +182,7 @@ goto :eof
     )
     exit /b 0
 
-:: Here we count the number of characters in a string
-:: We use this to determine the width of a column. Because batch is batchy, 
-:: strings entirely of spaces will not be counted correctly. Best of luck.
+:: Here we count the number of characters in a string. This is not perfect.
 :charCounter
     set "charCounterString=.%*."
     set charCount=0
@@ -171,16 +194,21 @@ goto :eof
     )
     exit /b 0
 
-:renderColumns
+:: Here we render the table to the screen. This is the easy part. We assume
+:: that the column widths and starting positions have been calculated.
+:: Text can be written left-to-right or right-to-left. This is not about
+:: character direction, just the order that the columns are printed in, which
+:: can be useful for debugging.
+:renderTable
     for /L %%r in (0,1,%rowCount%) do (
         set tempRowText=
         if not %%r == %rowCount% (
             for /L %%c in (0,1,!columnCount!) do (
                 if not %%c == %columnCount% (
                     rem left-to-right
-                    set "tempRowText=!tempRowText!%ANSI_ESC%[!columnStart[%%c]!G{!field[%%r,%%c]!}"
+                    rem set "tempRowText=!tempRowText!%ANSI_ESC%[!columnStart[%%c]!G{!field[%%r,%%c]!}"
                     rem right-to-left
-                    rem set "tempRowText=%ANSI_ESC%[!columnStart[%%c]!Gcolumn %%c!tempRowText!"
+                    set "tempRowText=%ANSI_ESC%[!columnStart[%%c]!G{!field[%%r,%%c]!}!tempRowText!"
                 )
             )
             echo !tempRowText!
