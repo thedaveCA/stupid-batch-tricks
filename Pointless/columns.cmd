@@ -1,11 +1,14 @@
 @echo off
 :: columns.cmd
-:: Ever wanted to print a table in batch? Me neither. I mean I've thought about
-:: it, but who would be insane enough to code it up? Oh, right, me. I'm insane.
+:: Ever wanted to print a table in batch? Useful maybe, but who would be
+:: insane enough to code it up? Oh, right, me. I'm insane.
+::
 :: This script will take a 2D array (yes, this is batch, yes I said array) of
 :: strings and print them in columns.
+:: 
 :: - It will calculate the width of each column.
 :: - It will also allow you to set the minimum width of a column manually.
+:: - It will sometimes even display them correctly.
 :: - Right now there is no maximum width for a column.
 :: - If you exceed the console width, well, you get what is coming to you.
 :: - It will not handle strings of only spaces, because batch.
@@ -21,6 +24,47 @@
 :: Is there like a reverse-MIT license, where you're not allowed to use this
 :: code for anything, and if you do you're forbidden from giving me credit?
 :: I should look into that.
+
+:: TODO, stuff that is possibly broken, maybe could be improved?
+:: - Column width calculation is not perfect, but it's close enough.
+:: - Column width calculation does not handle strings of only spaces, ANSI
+::   codes, unicode, double-width characters, combining characters, zero-width
+::   characters, control characters, emoji, RTL text, CJK text, tabs, line
+::   breaks, custom wrapping, etc.
+:: - Column width calculation does not handle console buffer or window size.
+::
+:: - Maximum width for columns could be useful. Truncating text is easy.
+::   Deciding what to truncate, when, and why? Not so easy.
+::
+:: - If we had that, maybe we could check the console width and if we're
+::   generating a table that is too wide... ??? I dunno. Who cares.
+:: 
+:: - It would be possible to wrap individual fields, but that would be a lot
+::   of work for something that is already a lot of work. And it would be
+::   ugly. Ugly code, ugly to use. Ugly all around. Like really, really ugly.
+::   Think about it, this is batch and we have a 2D array. There's no way to
+::   manipulate arrays, so... Add a dimension just to hold wrapped text? lol.
+::   I'm not doing that. I'm not. I'm not. I'm not. I'm not. I'm not. I'm not.
+::   And if I do, I'm not. I'm not. I'm not. I'm not. I'm not. I'm not. I'm not.
+::   You know how LLMs sometimes repeat themselves? I get it now. I really do.
+::   I'm not. I'm not. I'm not. I'm really not. I'm not. I'm not. I'm not.
+::   Except I might, because it would actually be a lot easier than it sounds.
+::
+:: - ANSI escape codes are not handled in the column width calculation
+::   or the rendering. This is a big deal if you're using them. I guess I
+::   could add field-based formatting. But I'm not writing a damn ANSI parser.
+::   But if I added style support then I could add a bug that causes stuff to
+::   blink instead of the defined style. Everybody loves blinking text.
+::
+:: - Right now I just wrap the text in braces because it was helpful to 
+::   visualize during development. I'd like to add some kind of formatting
+::   Maybe a table-left-character, field separator, table-right-character?
+::
+:: - Oh and you need ANSI, like for real. If you want a version that uses
+::   spaces instead of ANSI, go do it. I won't stop you. If there was a god,
+::   they would stop you. But this abomination exists, which I think is pretty
+::   good evidence that there is no god. Or that god is a sadist.
+::
 
 setlocal EnableDelayedExpansion
 
