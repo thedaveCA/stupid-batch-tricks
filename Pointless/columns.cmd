@@ -70,11 +70,11 @@ setlocal EnableDelayedExpansion
 
 call %~dp0..\Helpers\ANSI.cmd
 
-::set column_width[0]=3
-:: set column_width[1]=10
-set column_width[2]=15
-:: set column_width[3]=2
-:: set column_width[4]=5
+::set columnWidth[0]=3
+:: set columnWidth[1]=10
+set columnWidth[2]=15
+:: set columnWidth[3]=2
+:: set columnWidth[4]=5
 
 set rowCount=0
 set columnCount=0
@@ -96,11 +96,13 @@ set "field[3,5]=hello there how are     you?"
 set field[4,8]=X
 set field[5,0]=Z
 
+:: Subroutines
+call %~dp0..\Helpers\ANSI.cmd
 
-call :row_counter
-call :column_counter
-call :column_calculation
-call :render_columns
+call :rowCounter
+call :columnCounter
+call :columnCalculation
+call :renderColumns
 
 goto :eof
 
@@ -108,19 +110,19 @@ goto :eof
 
 :: Here we count the number of rows, starting at the existing rowCount (if any)
 :: We assume that if we encounter a blank row, we have reached the end of the data
-:row_counter
+:rowCounter
     set /a rowCount+=0
     set | findstr /b /c:"field[!rowCount!," > nul
     if !errorlevel! equ 0 (
         set /a rowCount+=1
-        goto :row_counter
+        goto :rowCounter
     )
     exit /b 0
 
 :: Here we count the number of columns, starting at the existing columnCount (if any)
 :: Empty columns are ignored, subsequent columns are handled properly.
 :: As noted above, a completely empty row ends processing.
-:column_counter
+:columnCounter
     set /a columnCount+=0
     for /l %%r in (0,1,%rowCount%) do (
         for /f "tokens=1,2 delims=,]" %%i in ('set field[%%r^, 2^>nul') do (
@@ -132,21 +134,21 @@ goto :eof
     exit /b 0
 
 :: Here we calculate the column widths and starting positions for each column
-:: We will only increase the width of a column, never decrease it, honouring 
+:: We will only increase the width of a column, never decrease it, honoring 
 :: any values set externally, where applicable.
-:column_calculation
-    set column_next_start=0
+:columnCalculation
+    set columnNextStart=0
     set columnPadding=2
 
     for /l %%c in (0,1,%columnCount%) do (
-        set column_start[%%c]=!column_next_start!
-        set /a column_width[%%c]+=0
+        set columnStart[%%c]=!columnNextStart!
+        set /a columnWidth[%%c]+=0
         for /l %%r in (0,1,%rowCount%) do (
             if defined field[%%r,%%c] (
-                call :char_counter !field[%%r,%%c]!
-                if !charCount! GTR !column_width[%%c]! set column_width[%%c]=!charCount!
+                call :charCounter !field[%%r,%%c]!
+                if !charCount! GTR !columnWidth[%%c]! set columnWidth[%%c]=!charCount!
             )
-            set /a column_next_start+=!column_width[%%c]!+!columnPadding!
+            set /a columnNextStart+=!columnWidth[%%c]!+!columnPadding!
         )
     )
     exit /b 0
@@ -154,30 +156,30 @@ goto :eof
 :: Here we count the number of characters in a string
 :: We use this to determine the width of a column. Because batch is batchy, 
 :: strings entirely of spaces will not be counted correctly. Best of luck.
-:char_counter
-    set "char_counter_string=.%*."
+:charCounter
+    set "charCounterString=.%*."
     set charCount=0
-    :char_counter_loop
-    if defined char_counter_string (
-        set "char_counter_string=!char_counter_string:~1!"
+    :charCounterLoop
+    if defined charCounterString (
+        set "charCounterString=!charCounterString:~1!"
         set /a charCount+=1
-        if defined char_counter_string goto char_counter_loop
+        if defined charCounterString goto charCounterLoop
     )
     exit /b 0
 
-:render_columns
+:renderColumns
     for /L %%r in (0,1,%rowCount%) do (
-        set temp_row_text=
+        set tempRowText=
         if not %%r == %rowCount% (
             for /L %%c in (0,1,!columnCount!) do (
                 if not %%c == %columnCount% (
                     rem left-to-right
-                    set "temp_row_text=!temp_row_text!%ANSI_ESC%[!column_start[%%c]!G{!field[%%r,%%c]!}"
+                    set "tempRowText=!tempRowText!%ANSI_ESC%[!columnStart[%%c]!G{!field[%%r,%%c]!}"
                     rem right-to-left
-                    rem set "temp_row_text=%ANSI_ESC%[!column_start[%%c]!Gcolumn %%c!temp_row_text!"
+                    rem set "tempRowText=%ANSI_ESC%[!columnStart[%%c]!Gcolumn %%c!tempRowText!"
                 )
             )
-            echo !temp_row_text!
+            echo !tempRowText!
         )
     )
     goto :eof
