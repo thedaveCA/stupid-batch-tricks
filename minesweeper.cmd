@@ -56,22 +56,30 @@ set game_board_size_y=7
 set game_board_mine_density=5
 call :generate_board
 
+set game_debug=1
+set game_debug_cheaterboard=%game_debug%
+set game_debug_dumpvars=%game_debug%
+
 :gameloop
 call :draw_header
 call :sanity_check
 call :draw_board
-call :draw_cheater_board
+if defined game_debug_cheaterboard call :draw_cheater_board
 call :draw_menu
 echo %ANSI_clear_screen_down%
-call :dump_vars
+if defined game_debug_dumpvars call :dump_vars
 
-choice /c wasdqzx0123rc9 /n /t 5 /d 9 > nul
-if errorlevel 14 (
+choice /c wasdqzx0123RcCDr /cs /n /t 5 /d r > nul
+if errorlevel 16 (
     rem Timeout, do nothing
+) else if errorlevel 15 (
+    call :toggle_dump_vars
+) else if errorlevel 14 (
+    call :toggle_cheater_board
 ) else if errorlevel 13 (
     call :clear_board_state
 ) else if errorlevel 12 (
-    cls
+    set game_console_dimensions=
 ) else if errorlevel 11 (
     set game_board_mine_density=10
     call :generate_board
@@ -120,11 +128,13 @@ goto :gameloop
 
 :toggle_visible
     if "!game_board_state[%game_position_x%][%game_position_y%]!" == "%game_visual_flag%" (
-        set game_error=Cannot reveal a flagged cell
+        set game_message_type=ERROR
+        set game_message_text=Cannot reveal a flagged cell
     ) else if "!game_board_state[%game_position_x%][%game_position_y%]!" == "%game_visual_hidden%" (
         set game_board_state[%game_position_x%][%game_position_y%]=!game_board_count[%game_position_x%][%game_position_y%]!
     ) else (
-        set game_error=Cannot unreveal a visible cell, that's just silly... Oh well okay, this one time.
+        set game_message_type=ERROR
+        set game_message_text=Cannot unreveal a visible cell, that's just silly... Oh well okay, this one time.
         set game_board_state[%game_position_x%][%game_position_y%]=%game_visual_hidden%
     )
     exit /b 0
@@ -135,7 +145,8 @@ goto :gameloop
     ) else if "!game_board_state[%game_position_x%][%game_position_y%]!" == "%game_visual_flag%" (
         set game_board_state[%game_position_x%][%game_position_y%]=%game_visual_hidden%
     ) else (
-        set game_error=Cannot flag a visible cell
+        set game_message_type=ERROR
+        set game_message_text=Cannot flag a visible cell
     )
     exit /b 0
 
@@ -147,7 +158,7 @@ goto :gameloop
     exit /b 0
 
 :clear_board_state
-    set game_error=Board state cleared / reset from scratch
+    set game_message_text=Board play state cleared
     for /l %%y in (1,1,%game_board_size_y%) do (
         for /l %%x in (1,1,%game_board_size_x%) do (
             set game_board_state[%%x][%%y]=%game_visual_hidden%
@@ -159,16 +170,16 @@ goto :gameloop
     :: Set starting position. Must be integers, doesn't need to be within the board.
     set game_position_x=0
     set game_position_y=0
-    set "game_error=Board Generated... Ready to play"
+    set "game_message_text=Board Generated... Ready to play"
 
     :: Generate the game board
         for /l %%y in (1,1,!game_board_size_y!) do (
             for /l %%x in (1,1,!game_board_size_x!) do (
                 if %game_board_mine_density% EQU 0 (
-                    set game_error=I heard you're scared of mines. Don't worry, there are none here.
+                    set game_message_text=I heard you're scared of mines. Don't worry, there are none here.
                     set game_board_mine[%%x][%%y]=0
                 ) else if %game_board_mine_density% EQU 1 (
-                    set game_error=I heard you like mines. Here, have some mines.
+                    set game_message_text=I heard you like mines. Here, have some mines.
                     set game_board_mine[%%x][%%y]=1
                 ) else (
                     set /a game_count+=1
@@ -203,23 +214,71 @@ goto :gameloop
     exit /b 0
 
 :draw_header
-    :: TODO: Move the clock to the right side of the screen
-    echo %ANSI_cursor_hide%%ANSI_cursor_move_home%%ANSI_header%Yup, it's Minesweeper-ish%ANSI_normal%                                         %ANSI_text_faint%%DATE% %TIME:~0,8%%ANSI_normal%%ANSI_clear_line_right%
+    :: Get the dimensions of the console
+    for /f "tokens=1,2 delims=: " %%a in ('mode con^|findstr /C:"Columns" /C:"Lines"') do (
+        if "%%~a" == "Columns" (
+            set game_console_width=%%b
+            set /a game_console_width_center=!game_console_width!/2
+            set /a game_console_position_clock=!game_console_width!-19
+            set /a game_console_position_debug_cheater=!game_console_position_clock!-12
+            set /a game_console_position_debug_dumpvars=!game_console_position_debug_cheater!-11
+            set /a game_console_position_debug=!game_console_position_debug_dumpvars!-8
+        )
+        if "%%~a" == "Lines" (
+            set game_console_height=%%b
+            set /a game_console_height_center=!game_console_height!/2
+        )
+    )
+
+    :: If the console dimensions have changed, redraw the screen.
+    if not "%game_console_dimensions%" == "!game_console_width!x!game_console_height!" (
+        set game_console_dimensions=!game_console_width!x!game_console_height!
+        set game_message_type=DEBUG
+        set game_message_text=Console dimensions changed. Redrawing...
+        echo %ANSI_cursor_hide%%ANSI_normal%
+        cls
+    )
+
+    :: Draw the header and clock.
+    echo %ANSI_cursor_move_home%%ANSI_clear_line%%ANSI_header%Yup, it's Minesweeper-ish%ANSI_normal%
+    echo %ANSI_ESC%[0;%game_console_position_clock%H%ANSI_text_faint%%DATE% %TIME:~0,8%%ANSI_normal%
+    if defined game_debug echo %ANSI_ESC%[0;%game_console_position_debug%H%ANSI_text_faint%%ANSI_bg_red%[debug]%ANSI_normal%
+    if defined game_debug_cheaterboard echo %ANSI_ESC%[0;%game_console_position_debug_cheater%H%ANSI_text_faint%%ANSI_bg_red%[cheater]%ANSI_normal%
+    if defined game_debug_dumpvars echo %ANSI_ESC%[0;%game_console_position_debug_dumpvars%H%ANSI_text_faint%%ANSI_bg_red%[dumpvars]%ANSI_normal%
     echo %ANSI_clear_line%
-    echo %ANSI_header_note%%game_error%%ANSI_normal%%ANSI_clear_line_right%
+    
+    :: If we have a pending message, draw it.
+    call :draw_message_box
+    exit /b 0
+
+:: TODO: Implement a message box that can be called from anywhere.
+:draw_message_box
+    if defined game_message_text (
+        if "%game_message_type%" == "DEBUG" (
+            if defined game_debug_enabled echo %ANSI_header_important%%game_message_text%%ANSI_normal%%ANSI_clear_line_right%
+        ) else if "%game_message_type%" == "ERROR" (
+            echo %ANSI_header_important%%game_message_text%%ANSI_normal%%ANSI_clear_line_right%
+        ) else (
+            echo %ANSI_header_note%%game_message_text%%ANSI_normal%%ANSI_clear_line_right%
+        )
+    ) else echo %ANSI_clear_line%
     echo %ANSI_clear_line%
-    set game_error=
+    set game_message_type=
+    set game_message_text=
     exit /b 0
 
 :draw_menu
     echo %ANSI_header%Instructions%ANSI_normal%%ANSI_clear_line_right%
     echo %ANSI_clear_line%%ANSI_cursor_next_line%Game play:%ANSI_clear_line_right%
-    echo    %ANSI_text_underline%W%ANSI_text_no_underline% %ANSI_text_underline%A%ANSI_text_no_underline% %ANSI_text_underline%S%ANSI_text_no_underline% %ANSI_text_underline%D%ANSI_text_no_underline% Move around the board.%ANSI_clear_line_right%
-    echo    %ANSI_text_underline%X%ANSI_text_no_underline% Flag as mine.     %ANSI_text_underline%Z%ANSI_text_no_underline% Mark as safe.%ANSI_clear_line_right%
-    echo %ANSI_clear_line%%ANSI_cursor_next_line%Start a new game with: %ANSI_clear_line_right%
+    echo    %ANSI_text_underline%w%ANSI_text_no_underline% %ANSI_text_underline%a%ANSI_text_no_underline% %ANSI_text_underline%s%ANSI_text_no_underline% %ANSI_text_underline%d%ANSI_text_no_underline% Move around the board.%ANSI_clear_line_right%
+    echo    %ANSI_text_underline%x%ANSI_text_no_underline% Flag as mine.     %ANSI_text_underline%z%ANSI_text_no_underline% Mark as safe.%ANSI_clear_line_right%
+    echo    %ANSI_text_underline%r%ANSI_text_no_underline% Draw the screen.  %ANSI_text_underline%R%ANSI_text_no_underline% Refresh the screen.%ANSI_clear_line_right%
+    echo %ANSI_clear_line%%ANSI_cursor_next_line%Start, restart or end game: %ANSI_clear_line_right%
     echo    %ANSI_text_underline%0%ANSI_text_no_underline% No mines.         %ANSI_text_underline%1%ANSI_text_no_underline% ALL THE MINES%ANSI_clear_line_right%
     echo    %ANSI_text_underline%2%ANSI_text_no_underline% A lot of mines.   %ANSI_text_underline%3%ANSI_text_no_underline% A few mines.%ANSI_clear_line_right%
-    echo    %ANSI_text_underline%c%ANSI_text_no_underline% Clear the board.  %ANSI_text_underline%R%ANSI_text_no_underline% Refresh the screen.   %ANSI_text_underline%Q%ANSI_text_no_underline%uit%ANSI_clear_line_right%
+    echo    %ANSI_text_underline%c%ANSI_text_no_underline% Clear the board.  %ANSI_text_underline%q%ANSI_text_no_underline% Quit...%ANSI_clear_line_right%
+    echo %ANSI_clear_line%%ANSI_cursor_next_line%Other stuff: %ANSI_clear_line_right%
+    echo    %ANSI_text_underline%C%ANSI_text_no_underline% Toggle Cheaterd.  %ANSI_text_underline%D%ANSI_text_no_underline% Toggle variable dump%ANSI_clear_line_right%
     echo %ANSI_clear_line%
     exit /b 0
 
@@ -252,10 +311,26 @@ goto :gameloop
     )
     exit /b 0
 
+:toggle_cheater_board
+    if defined game_debug_cheaterboard (
+        set game_debug_cheaterboard=
+    ) else (
+        set game_debug_cheaterboard=1
+    )
+    exit /b 0
+
+:toggle_dump_vars
+    if defined game_debug_dumpvars (
+        set game_debug_dumpvars=
+    ) else (
+        set game_debug_dumpvars=1
+    )
+    exit /b 0
+
 :draw_cheater_board
 :: This is a cheater board. It shows the mines and count of mines around each cell.
 :: It's not part of the game, but it's useful for debugging. It's also reasonably
-:: expensive to draw, so it will slow down the game.
+:: unoptimized and expensive to draw, so it will slow down the game.
 echo %ANSI_header%Cheater board%ANSI_normal%%ANSI_clear_line_right%
 echo %ANSI_clear_line%
     set temp_line_mine_clear=%ANSI_reset%%ANSI_bg_blue%
