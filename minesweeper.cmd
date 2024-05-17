@@ -246,21 +246,24 @@ goto :gameloop
     echo %game_header%%ANSI_cursor_next_line%%ANSI_clear_line%
     set game_header=
     
-    :: If we have a pending message, draw it.
     call :draw_message_box
     exit /b 0
 
 :: TODO: Implement a message box that can be called from anywhere.
+:: TODO: Handle debug crap more gracefully.
 :draw_message_box
+    if defined game_message_type if not defined game_debug_enabled if game_message_type == "DEBUG" set game_message_text=
     if defined game_message_text (
-        if "%game_message_type%" == "DEBUG" (
-            if defined game_debug_enabled echo %ANSI_header_important%%game_message_text%%ANSI_normal%%ANSI_clear_line_right%
+        if "!game_message_type!" == "DEBUG" (
+            echo %ANSI_header_important%!game_message_text!%ANSI_normal%%ANSI_clear_line_right%
         ) else if "%game_message_type%" == "ERROR" (
-            echo %ANSI_header_important%%game_message_text%%ANSI_normal%%ANSI_clear_line_right%
+            echo %ANSI_header_important%!game_message_text!%ANSI_normal%%ANSI_clear_line_right%
         ) else (
-            echo %ANSI_header_note%%game_message_text%%ANSI_normal%%ANSI_clear_line_right%
+            echo %ANSI_header_note%!game_message_text!%ANSI_normal%%ANSI_clear_line_right%
         )
-    ) else echo %ANSI_clear_line%
+    ) else (
+        echo %ANSI_clear_line%
+    )
     echo %ANSI_clear_line%
     set game_message_type=
     set game_message_text=
@@ -276,8 +279,10 @@ goto :gameloop
     echo    %ANSI_text_underline%0%ANSI_text_no_underline% No mines.         %ANSI_text_underline%1%ANSI_text_no_underline% ALL THE MINES%ANSI_clear_line_right%
     echo    %ANSI_text_underline%2%ANSI_text_no_underline% A lot of mines.   %ANSI_text_underline%3%ANSI_text_no_underline% A few mines.%ANSI_clear_line_right%
     echo    %ANSI_text_underline%c%ANSI_text_no_underline% Clear the board.  %ANSI_text_underline%q%ANSI_text_no_underline% Quit...%ANSI_clear_line_right%
-    echo %ANSI_clear_line%%ANSI_cursor_next_line%Other stuff: %ANSI_clear_line_right%
-    echo    %ANSI_text_underline%C%ANSI_text_no_underline% Toggle Cheaterd.  %ANSI_text_underline%D%ANSI_text_no_underline% Toggle variable dump%ANSI_clear_line_right%
+    if defined game_debug (
+        echo %ANSI_clear_line%%ANSI_cursor_next_line%Debugging stuff: %ANSI_clear_line_right%
+        echo    %ANSI_text_underline%C%ANSI_text_no_underline% Toggle Cheaterd.  %ANSI_text_underline%D%ANSI_text_no_underline% Toggle variable dump%ANSI_clear_line_right%
+    )
     echo %ANSI_clear_line%
     exit /b 0
 
