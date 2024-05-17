@@ -69,45 +69,41 @@ call :draw_menu
 echo %ANSI_clear_screen_down%
 if defined game_debug_dumpvars call :dump_vars
 
+:: Get and handle user input
 choice /c wasdqzx0123RcCDr /cs /n /t 5 /d r > nul
-if errorlevel 16 (
-    rem Timeout, do nothing
-) else if errorlevel 15 (
-    call :toggle_dump_vars
-) else if errorlevel 14 (
-    call :toggle_cheater_board
-) else if errorlevel 13 (
-    call :clear_board_state
-) else if errorlevel 12 (
-    set game_console_dimensions=
-) else if errorlevel 11 (
-    set game_board_mine_density=10
+
+if %errorlevel% geq 16 rem Timeout, do nothing
+if %errorlevel% equ 15 call :toggle_dump_vars
+if %errorlevel% equ 14 call :toggle_cheater_board
+if %errorlevel% equ 13 call :clear_board_state
+if %errorlevel% equ 12 set "game_console_dimensions="
+if %errorlevel% equ 11 (
+    set "game_board_mine_density=10"
     call :generate_board
-) else if errorlevel 10 (
-    set game_board_mine_density=2
+)
+if %errorlevel% equ 10 (
+    set "game_board_mine_density=2"
     call :generate_board
-) else if errorlevel 9 (
-    set game_board_mine_density=1
+)
+if %errorlevel% equ 9 (
+    set "game_board_mine_density=1"
     call :generate_board
-) else if errorlevel 8 (
-    set game_board_mine_density=0
+)
+if %errorlevel% equ 8 (
+    set "game_board_mine_density=0"
     call :generate_board
-) else if errorlevel 7 (
-    call :toggle_flag
-) else if errorlevel 6 (
-    call :toggle_visible
-) else if errorlevel 5 (
+)
+if %errorlevel% equ 7 call :toggle_flag
+if %errorlevel% equ 6 call :toggle_visible
+if %errorlevel% equ 5 (
     goto :cleanup
     goto :eof
-) else if errorlevel 4 (
-    call :move_right
-) else if errorlevel 3 (
-    call :move_down
-) else if errorlevel 2 (
-    call :move_left
-) else if errorlevel 1 (
-    call :move_up
 )
+if %errorlevel% equ 4 call :move_right
+if %errorlevel% equ 3 call :move_down
+if %errorlevel% equ 2 call :move_left
+if %errorlevel% equ 1 call :move_up
+
 goto :gameloop
 
 :move_up
