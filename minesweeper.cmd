@@ -236,12 +236,15 @@ goto :gameloop
     )
 
     :: Draw the header and clock.
-    echo %ANSI_cursor_move_home%%ANSI_clear_line%%ANSI_header%Yup, it's Minesweeper-ish%ANSI_normal%
-    echo %ANSI_ESC%[0;%game_console_position_clock%H%ANSI_text_faint%%DATE% %TIME:~0,8%%ANSI_normal%
-    if defined game_debug echo %ANSI_ESC%[0;%game_console_position_debug%H%ANSI_text_faint%%ANSI_bg_red%[debug]%ANSI_normal%
-    if defined game_debug_cheaterboard echo %ANSI_ESC%[0;%game_console_position_debug_cheater%H%ANSI_text_faint%%ANSI_bg_red%[cheater]%ANSI_normal%
-    if defined game_debug_dumpvars echo %ANSI_ESC%[0;%game_console_position_debug_dumpvars%H%ANSI_text_faint%%ANSI_bg_red%[dumpvars]%ANSI_normal%
-    echo %ANSI_clear_line%
+    set "game_header=%ANSI_cursor_move_home%%ANSI_clear_line%%ANSI_header%Yup, it's Minesweeper-ish%ANSI_normal%"
+    set "game_header=%game_header%%ANSI_ESC%[0;%game_console_position_clock%H%ANSI_text_faint%%DATE% %TIME:~0,8%%ANSI_normal%"
+
+    if defined game_debug set "game_header=%game_header%%ANSI_ESC%[0;%game_console_position_debug%H%ANSI_text_faint%%ANSI_bg_red%[debug]%ANSI_normal%"
+    if defined game_debug_cheaterboard set "game_header=%game_header%%ANSI_ESC%[0;%game_console_position_debug_cheater%H%ANSI_text_faint%%ANSI_bg_red%[cheater]%ANSI_normal%"
+    if defined game_debug_dumpvars set "game_header=%game_header%%ANSI_ESC%[0;%game_console_position_debug_dumpvars%H%ANSI_text_faint%%ANSI_bg_red%[dumpvars]%ANSI_normal%"
+
+    echo %game_header%%ANSI_cursor_next_line%%ANSI_clear_line%
+    set game_header=
     
     :: If we have a pending message, draw it.
     call :draw_message_box
