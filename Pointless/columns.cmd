@@ -199,3 +199,30 @@ goto :eof
         )
     )
     goto :eof
+
+:: Here we draw a frame around the table. Dunno if this is useful. 
+:: We assume that appropriate padding will exist between the frame and the
+:: table, these can possibly be written separately, or maybe the frame can be
+:: integrated into the table rendering.
+:: TODO: Write this code, I guess?
+:renderTableFrame
+    set "tableFrameCharLeft=["
+    set "tableFrameCharRight=]"
+    set "tableFrameCharTop=-"
+    set "tableFrameCharBottom=-"
+    set "tableFrameCharSplit=\"
+    set table
+
+    exit /b 1
+    for /L %%r in (0,1,%rowCount%) do (
+        set tempRowText=
+        if not %%r == %rowCount% (
+            for /L %%c in (0,1,!columnCount!) do (
+                if not %%c == %columnCount% (
+                    ::set "tempRowText=%ANSI_ESC%[!columnStart[%%c]!G{!field[%%r,%%c]!}!tempRowText!"
+                )
+            )
+            echo !tempRowText!
+        )
+    )
+    goto :eof
