@@ -47,6 +47,7 @@ if 1 == 1 (
 :: Possible visual states for each cell
 set game_visual_hidden=.
 set game_visual_flag=X
+set game_visual_flagsafe=@
 
 :: Set game board size. Don't be stupid.
 set game_board_size_x=7
@@ -126,8 +127,12 @@ goto :gameloop
     if "!game_board_state[%game_position_x%][%game_position_y%]!" == "%game_visual_flag%" (
         set game_message_type=ERROR
         set game_message_text=Cannot reveal a flagged cell
+    ) else if "!game_board_state[%game_position_x%][%game_position_y%]!" == "%game_visual_flagsafe%" (
+        set game_board_state[%game_position_x%][%game_position_y%]=!game_board_count[%game_position_x%][%game_position_y%]!
+        call :flood_fill
     ) else if "!game_board_state[%game_position_x%][%game_position_y%]!" == "%game_visual_hidden%" (
         set game_board_state[%game_position_x%][%game_position_y%]=!game_board_count[%game_position_x%][%game_position_y%]!
+        call :flood_fill
     ) else (
         set game_message_type=ERROR
         set game_message_text=Cannot unreveal a visible cell, that's just silly... Oh well okay, this one time.
@@ -139,6 +144,8 @@ goto :gameloop
     if "!game_board_state[%game_position_x%][%game_position_y%]!" == "%game_visual_hidden%" (
         set game_board_state[%game_position_x%][%game_position_y%]=%game_visual_flag%
     ) else if "!game_board_state[%game_position_x%][%game_position_y%]!" == "%game_visual_flag%" (
+        set game_board_state[%game_position_x%][%game_position_y%]=%game_visual_flagsafe%
+    ) else if "!game_board_state[%game_position_x%][%game_position_y%]!" == "%game_visual_flagsafe%" (
         set game_board_state[%game_position_x%][%game_position_y%]=%game_visual_hidden%
     ) else (
         set game_message_type=ERROR
@@ -273,12 +280,12 @@ goto :gameloop
     echo %ANSI_header%Instructions%ANSI_normal%%ANSI_clear_line_right%
     echo %ANSI_clear_line%%ANSI_cursor_next_line%Game play:%ANSI_clear_line_right%
     echo    %ANSI_text_underline%w%ANSI_text_no_underline% %ANSI_text_underline%a%ANSI_text_no_underline% %ANSI_text_underline%s%ANSI_text_no_underline% %ANSI_text_underline%d%ANSI_text_no_underline% Move around the board.%ANSI_clear_line_right%
-    echo    %ANSI_text_underline%x%ANSI_text_no_underline% Flag as mine.     %ANSI_text_underline%z%ANSI_text_no_underline% Mark as safe.%ANSI_clear_line_right%
-    echo    %ANSI_text_underline%r%ANSI_text_no_underline% Draw the screen.  %ANSI_text_underline%R%ANSI_text_no_underline% Refresh the screen.%ANSI_clear_line_right%
+    echo    %ANSI_text_underline%x%ANSI_text_no_underline% Flag as safe/mine.  %ANSI_text_underline%z%ANSI_text_no_underline% IT'S SAFE! REVEAL IT!.%ANSI_clear_line_right%
+    echo    %ANSI_text_underline%r%ANSI_text_no_underline% Draw the screen.    %ANSI_text_underline%R%ANSI_text_no_underline% Refresh the screen.%ANSI_clear_line_right%
     echo %ANSI_clear_line%%ANSI_cursor_next_line%Start, restart or end game: %ANSI_clear_line_right%
-    echo    %ANSI_text_underline%0%ANSI_text_no_underline% No mines.         %ANSI_text_underline%1%ANSI_text_no_underline% ALL THE MINES%ANSI_clear_line_right%
-    echo    %ANSI_text_underline%2%ANSI_text_no_underline% A lot of mines.   %ANSI_text_underline%3%ANSI_text_no_underline% A few mines.%ANSI_clear_line_right%
-    echo    %ANSI_text_underline%c%ANSI_text_no_underline% Clear the board.  %ANSI_text_underline%q%ANSI_text_no_underline% Quit...%ANSI_clear_line_right%
+    echo    %ANSI_text_underline%0%ANSI_text_no_underline% No mines.           %ANSI_text_underline%1%ANSI_text_no_underline% ALL THE MINES%ANSI_clear_line_right%
+    echo    %ANSI_text_underline%2%ANSI_text_no_underline% A lot of mines.     %ANSI_text_underline%3%ANSI_text_no_underline% A few mines.%ANSI_clear_line_right%
+    echo    %ANSI_text_underline%c%ANSI_text_no_underline% Clear the board.    %ANSI_text_underline%q%ANSI_text_no_underline% Quit...%ANSI_clear_line_right%
     if defined game_debug (
         echo %ANSI_clear_line%%ANSI_cursor_next_line%Debugging stuff: %ANSI_clear_line_right%
         echo    %ANSI_text_underline%C%ANSI_text_no_underline% Toggle Cheaterd.  %ANSI_text_underline%D%ANSI_text_no_underline% Toggle variable dump%ANSI_clear_line_right%
@@ -293,13 +300,18 @@ goto :gameloop
     for /l %%y in (1,1,!game_board_size_y!) do (
         set temp_line=
         for /l %%x in (1,1,!game_board_size_x!) do (
-            rem if %%x==!game_position_x! if %%y==!game_position_y! set temp_style=%ANSI_text_reverse%%ANSI_text_underline%%ANSI_text_overline%
+            set temp_style=
+            if %%x==!game_position_x! if %%y==!game_position_y! (
+                set temp_style=%ANSI_text_reverse%%ANSI_text_underline%%ANSI_text_overline%
+            ) 
             if "!game_board_state[%%x][%%y]!" == "%game_visual_hidden%" (
-                set temp_line=!temp_line!%game_visual_hidden%
+                set temp_line=!temp_line!!temp_style!%game_visual_hidden%%ANSI_reset%
             ) else if "!game_board_state[%%x][%%y]!" == "%game_visual_flag%" (
-                set temp_line=!temp_line!%game_visual_flag%
+                set temp_line=!temp_line!!temp_style!%game_visual_flag%%ANSI_reset%
+            ) else if "!game_board_state[%%x][%%y]!" == "%game_visual_flagsafe%" (
+                set temp_line=!temp_line!!temp_style!%game_visual_flagsafe%%ANSI_reset%
             ) else (
-                set temp_line=!temp_line!!game_board_count[%%x][%%y]!
+                set temp_line=!temp_line!!temp_style!!game_board_count[%%x][%%y]!%ANSI_reset%
             )
         )
     echo %ascii_vertical_bar% !temp_line!%ANSI_normal%%ANSI_clear_line_right% %ascii_vertical_bar%
@@ -329,6 +341,41 @@ goto :gameloop
     ) else (
         set game_debug_dumpvars=1
     )
+    exit /b 0
+
+:flood_fill
+:: Here we look for any cells that are hidden, don't have a mine, AND are 
+:: directly adjacent to a revealed cell, and reveal them.
+    set floodfilltrue=
+    for /l %%y in (1,1,!game_board_size_y!) do (
+        for /l %%x in (1,1,!game_board_size_x!) do (
+            if "!game_board_mine[%%x][%%y]!" == "0" if "!game_board_state[%%x][%%y]!" == "%game_visual_hidden%" (
+                set /a x_up=%%x+1
+                set /a x_down=%%x-1
+                set /a y_up=%%y+1
+                set /a y_down=%%y-1
+                for /l %%m in (!x_down!,2,!x_up!) do (
+                    rem echo testing x %%x y %%y - [%%m][%%y] - !game_board_state[%%m][%%y]!
+                    rem if defined game_board_state[%%m][%%y] if !game_board_state[%%m][%%y]! gtr 0 echo set "game_board_state[%%x][%%y]=!game_board_count[%%x][%%y]!"
+                    if defined game_board_state[%%m][%%y] if !game_board_state[%%m][%%y]! gtr 0 (
+                        set "game_board_state[%%x][%%y]=!game_board_count[%%x][%%y]!"
+                        set floodfilltrue=1
+                    )
+                )
+                for /l %%n in (!y_down!,2,!y_up!) do (
+                    rem echo testing x %%x y %%y - [%%x][%%n] - !game_board_state[%%x][%%n]!
+                    rem if defined game_board_state[%%x][%%n] if !game_board_state[%%x][%%n]! gtr 0 echo set "game_board_state[%%x][%%y]=!game_board_count[%%x][%%y]!"
+                    if defined game_board_state[%%x][%%n] if !game_board_state[%%x][%%n]! gtr 0 (
+                        set "game_board_state[%%x][%%y]=!game_board_count[%%x][%%y]!"
+                        set floodfilltrue=1
+                    )
+                )
+                rem pause
+            )
+        )
+    )
+            rem if "!game_board_state[%%x][%%y]!" == "%game_visual_flagsafe%"
+            if defined floodfilltrue call :flood_fill
     exit /b 0
 
 :draw_cheater_board
