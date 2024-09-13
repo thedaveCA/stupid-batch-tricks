@@ -14,6 +14,7 @@ set ANSI_header=%ANSI_fg_bright_yellow%%ANSI_bg_blue%%ANSI_text_underline%%ANSI_
 
 if exist %dp0Helpers\CleanEnvironmentVariables.cmd call %dp0Helpers\CleanEnvironmentVariables.cmd game_
 
+:: Request an alternate console and adjust the console state
 echo %ANSI_esc%[?1049h
 echo %ANSI_esc%[10;10r
 
@@ -52,17 +53,26 @@ set game_visual_hidden=.
 set game_visual_flag=X
 set game_visual_flagsafe=@
 
-:: Set game board size. Don't be stupid.
-set game_board_size_x=7
-set game_board_size_y=7
+:: Set game board size. Don't be stupid. Board generation is slow, because batch.
+set game_board_size_x=9
+set game_board_size_y=%game_board_size_x%
 
 :: Set mine density. 1 in X chance of a mine.
 set game_board_mine_density=5
 call :generate_board
 
-set game_debug=1
+:: Set debug flags. Blank is disabled, any value is enabled.
+:: e.g. set game_debug=true  or  set game_debug=true
+set game_debug=
 set game_debug_cheaterboard=%game_debug%
 set game_debug_dumpvars=%game_debug%
+
+:: Set the refresh rate for the game loop. This controls how often the screen
+:: will refresh and the game will update while the user is idle, all user
+:: actions will trigger an immediate refresh. This is in seconds.
+:: I put some effort into making the screen not flicker (although the debug
+:: info does flicker, if enabled.
+set game_refresh_rate=1
 
 :gameloop
 call :draw_header
@@ -74,9 +84,9 @@ echo %ANSI_clear_screen_down%
 if defined game_debug_dumpvars call :dump_vars
 
 :: Get and handle user input
-choice /c wasdqzx0123RcCDr /cs /n /t 5 /d r > nul
+choice /c wasdqzx0123RcCDr /cs /n /t %game_refresh_rate% /d r > nul
 
-if %errorlevel% geq 16 rem Timeout, do nothing
+if %errorlevel% geq 16 if not defined game_over set /a game_timer+=1
 if %errorlevel% equ 15 call :toggle_dump_vars
 if %errorlevel% equ 14 call :toggle_cheater_board
 if %errorlevel% equ 13 call :clear_board_state
@@ -129,17 +139,27 @@ goto :gameloop
 :toggle_visible
     if "!game_board_state[%game_position_x%][%game_position_y%]!" == "%game_visual_flag%" (
         set game_message_type=ERROR
-        set game_message_text=Cannot reveal a flagged cell
+        set game_message_text=Cannot reveal a flagged cell, unflag it first.
     ) else if "!game_board_state[%game_position_x%][%game_position_y%]!" == "%game_visual_flagsafe%" (
         set game_board_state[%game_position_x%][%game_position_y%]=!game_board_count[%game_position_x%][%game_position_y%]!
         call :flood_fill
     ) else if "!game_board_state[%game_position_x%][%game_position_y%]!" == "%game_visual_hidden%" (
-        set game_board_state[%game_position_x%][%game_position_y%]=!game_board_count[%game_position_x%][%game_position_y%]!
-        call :flood_fill
+        if "!game_board_mine[%game_position_x%][%game_position_y%]!" == "1" (
+            set game_message_type=ERROR
+            set game_message_text=BOOM! You hit a mine! Game over.
+            set game_over=1
+        ) else (
+            set game_board_state[%game_position_x%][%game_position_y%]=!game_board_count[%game_position_x%][%game_position_y%]!
+            call :flood_fill
+        )
     ) else (
         set game_message_type=ERROR
-        set game_message_text=Cannot unreveal a visible cell, that's just silly... Oh well okay, this one time.
-        set game_board_state[%game_position_x%][%game_position_y%]=%game_visual_hidden%
+        if defined game_debug (
+            set game_message_text=Cannot unreveal a visible cell, that's just silly... Oh well okay, this one time.
+            set game_board_state[%game_position_x%][%game_position_y%]=%game_visual_hidden%
+        ) else (
+            set game_message_text=Cannot unreveal a visible cell, you broke it, you bought it.
+        )
     )
     exit /b 0
 
@@ -176,7 +196,15 @@ goto :gameloop
     :: Set starting position. Must be integers, doesn't need to be within the board.
     set game_position_x=0
     set game_position_y=0
+    set game_timer=0
+    set game_over=
     set "game_message_text=Board Generated... Ready to play"
+
+    set game_header_footer_spacer=%ascii_horizontal_bar%
+    for /l %%n in (1,1,!game_board_size_x!) do (
+        set game_header_footer_spacer=!game_header_footer_spacer!%ascii_horizontal_bar%%ascii_horizontal_bar%
+    )
+
 
     :: Generate the game board
         for /l %%y in (1,1,!game_board_size_y!) do (
@@ -247,11 +275,13 @@ goto :gameloop
 
     :: Draw the header and clock.
     set "game_header=%ANSI_cursor_move_home%%ANSI_clear_line%%ANSI_header%Yup, it's Minesweeper-ish%ANSI_normal%"
-    set "game_header=%game_header%%ANSI_ESC%[0;%game_console_position_clock%H%ANSI_text_faint%%DATE% %TIME:~0,8%%ANSI_normal%"
-
+    set "game_header=%game_header%%ANSI_ESC%[0;%game_console_position_clock%H%ANSI_text_faint%%DATE% %TIME:~0,8%%ANSI_normal%%ANSI_clear_line_right%"
+    if defined game_timer set "game_header=%game_header%%ANSI_ESC%[2;0H%ANSI_clear_line_right%"
+    if defined game_timer set "game_header=%game_header%%ANSI_ESC%[2;%game_console_position_clock%H%ANSI_clear_line_left%%ANSI_text_faint%%game_timer% seconds%ANSI_normal%%ANSI_clear_line_right%"
     if defined game_debug set "game_header=%game_header%%ANSI_ESC%[0;%game_console_position_debug%H%ANSI_text_faint%%ANSI_bg_red%[debug]%ANSI_normal%"
     if defined game_debug_cheaterboard set "game_header=%game_header%%ANSI_ESC%[0;%game_console_position_debug_cheater%H%ANSI_text_faint%%ANSI_bg_red%[cheater]%ANSI_normal%"
     if defined game_debug_dumpvars set "game_header=%game_header%%ANSI_ESC%[0;%game_console_position_debug_dumpvars%H%ANSI_text_faint%%ANSI_bg_red%[dumpvars]%ANSI_normal%"
+    set "game_header=%game_header%%ANSI_ESC%[3;0H"
 
     echo %game_header%%ANSI_cursor_next_line%%ANSI_clear_line%
     set game_header=
@@ -261,6 +291,7 @@ goto :gameloop
 
 :: TODO: Implement a message box that can be called from anywhere.
 :: TODO: Handle debug crap more gracefully.
+:: TODO: Pause support?
 :draw_message_box
     if defined game_message_type if not defined game_debug_enabled if game_message_type == "DEBUG" set game_message_text=
     if defined game_message_text (
@@ -299,13 +330,13 @@ goto :gameloop
 :draw_board
     echo %ANSI_header%Game board%ANSI_normal%%ANSI_clear_line_right%
     echo %ANSI_clear_line%
-    ::echo %ascii_top_left% %ascii_horizontal_bar%%ascii_horizontal_bar%%ascii_horizontal_bar% %ascii_top_right%%ANSI_clear_line_right%
+    if defined game_header_footer_spacer echo %ascii_top_left% %game_header_footer_spacer% %ascii_top_right%%ANSI_clear_line_right%
     for /l %%y in (1,1,!game_board_size_y!) do (
         set temp_line=
         for /l %%x in (1,1,!game_board_size_x!) do (
-            set temp_style=
+            set "temp_style= "
             if %%x==!game_position_x! if %%y==!game_position_y! (
-                set temp_style=%ANSI_text_reverse%%ANSI_text_underline%%ANSI_text_overline%
+                set "temp_style=%ANSI_text_reverse%%ANSI_text_underline%%ANSI_text_overline% "
             ) 
             if "!game_board_state[%%x][%%y]!" == "%game_visual_hidden%" (
                 set temp_line=!temp_line!!temp_style!%game_visual_hidden%%ANSI_reset%
@@ -317,9 +348,9 @@ goto :gameloop
                 set temp_line=!temp_line!!temp_style!!game_board_count[%%x][%%y]!%ANSI_reset%
             )
         )
-    echo %ascii_vertical_bar% !temp_line!%ANSI_normal%%ANSI_clear_line_right% %ascii_vertical_bar%
+    echo %ascii_vertical_bar% !temp_line!%ANSI_normal%%ANSI_clear_line_right%  %ascii_vertical_bar%
     )
-    :: echo %ascii_bottom_left% %ascii_horizontal_bar%%ascii_horizontal_bar%%ascii_horizontal_bar% %ascii_bottom_right%%ANSI_clear_line_right%
+    if defined game_header_footer_spacer echo %ascii_bottom_left% %game_header_footer_spacer% %ascii_bottom_right%%ANSI_clear_line_right%
     echo %ANSI_clear_line%
     exit /b 0
 
@@ -377,8 +408,8 @@ goto :gameloop
             )
         )
     )
-            rem if "!game_board_state[%%x][%%y]!" == "%game_visual_flagsafe%"
-            if defined floodfilltrue call :flood_fill
+    :: Call recursively if we found any cells to reveal.
+    if defined floodfilltrue call :flood_fill
     exit /b 0
 
 :draw_cheater_board
