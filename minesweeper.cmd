@@ -14,6 +14,9 @@ set ANSI_header=%ANSI_fg_bright_yellow%%ANSI_bg_blue%%ANSI_text_underline%%ANSI_
 
 if exist %dp0Helpers\CleanEnvironmentVariables.cmd call %dp0Helpers\CleanEnvironmentVariables.cmd game_
 
+echo %ANSI_esc%[?1049h
+echo %ANSI_esc%[10;10r
+
 :: Possible mine states for each cell:
 :: | 0 | No Mine
 :: | 1 | Mine
@@ -363,5 +366,6 @@ echo %ANSI_clear_line%
 
 :cleanup
     echo %ANSI_normal%%ANSI_cursor_show%
+    echo %ANSI_esc%[?1049l
     endlocal
     exit /b 0
