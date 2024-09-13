@@ -86,7 +86,26 @@ if defined game_debug_dumpvars call :dump_vars
 :: Get and handle user input
 choice /c wasdqzx0123RcCDr /cs /n /t %game_refresh_rate% /d r > nul
 
-if %errorlevel% geq 16 if not defined game_over set /a game_timer+=1
+:: If we aren't in game-over status, update the game timer. If the user
+:: manually presses "r" this can get triggered more than once a second,
+:: so we will limit the clock from being incremented more than once a 
+:: second. This does meant that the timer will step forward slightly,
+:: then sit and wait for longer than a second if the user pressess "r".
+::
+:: Also, the counter only counts user idle time, if the game is processing
+::  for more than a second, the timer will not increment.
+if %errorlevel% geq 16 (
+    if not defined game_over (
+        if defined game_timer_last_updated (
+            if not "%game_timer_last_updated%" == "%time:~0,8%" (
+                set /a game_timer+=1
+            )
+        ) else (
+            set /a game_timer+=1
+        )
+        set game_timer_last_updated=%time:~0,8%
+    )
+)
 if %errorlevel% equ 15 call :toggle_dump_vars
 if %errorlevel% equ 14 call :toggle_cheater_board
 if %errorlevel% equ 13 call :clear_board_state
@@ -274,17 +293,35 @@ goto :gameloop
     )
 
     :: Draw the header and clock.
+    set game_timer_text=
+    set "game_header=%game_header%%ANSI_ESC%[2;0H%ANSI_clear_line_right%"
     set "game_header=%ANSI_cursor_move_home%%ANSI_clear_line%%ANSI_header%Yup, it's Minesweeper-ish%ANSI_normal%"
     set "game_header=%game_header%%ANSI_ESC%[0;%game_console_position_clock%H%ANSI_text_faint%%DATE% %TIME:~0,8%%ANSI_normal%%ANSI_clear_line_right%"
-    if defined game_timer set "game_header=%game_header%%ANSI_ESC%[2;0H%ANSI_clear_line_right%"
-    if defined game_timer set "game_header=%game_header%%ANSI_ESC%[2;%game_console_position_clock%H%ANSI_clear_line_left%%ANSI_text_faint%%game_timer% seconds%ANSI_normal%%ANSI_clear_line_right%"
+
+    if defined game_timer (
+  
+        :: Calculate the game timer
+        set /a game_timer_hours=%game_timer% / 3600
+        set /a game_timer_minutes=%game_timer% / 60 %% 60
+        set /a game_timer_seconds=%game_timer% %% 60
+
+        :: Pad minutes with leading zeros
+        if %game_timer% geq 3600 if !game_timer_minutes! lss 10 set "game_timer_minutes=0!game_timer_minutes!"
+        if %game_timer% geq 10 if !game_timer_seconds! lss 10 set "game_timer_seconds=0!game_timer_seconds!"
+
+        if %game_timer% geq 3600 set "game_timer_text=!game_timer_text!!game_timer_hours!:"
+        if %game_timer% geq 59 set "game_timer_text=!game_timer_text!!game_timer_minutes!:"
+        set "game_timer_text=!game_timer_text!!game_timer_seconds!"
+
+        set "game_header=%game_header%%ANSI_ESC%[2;%game_console_position_clock%H%ANSI_clear_line_left%%ANSI_text_faint%!game_timer_text!%ANSI_normal%%ANSI_clear_line_right%"
+    )
+
     if defined game_debug set "game_header=%game_header%%ANSI_ESC%[0;%game_console_position_debug%H%ANSI_text_faint%%ANSI_bg_red%[debug]%ANSI_normal%"
     if defined game_debug_cheaterboard set "game_header=%game_header%%ANSI_ESC%[0;%game_console_position_debug_cheater%H%ANSI_text_faint%%ANSI_bg_red%[cheater]%ANSI_normal%"
     if defined game_debug_dumpvars set "game_header=%game_header%%ANSI_ESC%[0;%game_console_position_debug_dumpvars%H%ANSI_text_faint%%ANSI_bg_red%[dumpvars]%ANSI_normal%"
     set "game_header=%game_header%%ANSI_ESC%[3;0H"
 
     echo %game_header%%ANSI_cursor_next_line%%ANSI_clear_line%
-    set game_header=
     
     call :draw_message_box
     exit /b 0
@@ -379,7 +416,7 @@ goto :gameloop
 
 :flood_fill
 :: Here we look for any cells that are hidden, don't have a mine, AND are 
-:: directly adjacent to a revealed cell, and reveal them.
+:: directly adjacent (up/down/left/right) to a revealed cell, and reveal them.
     set floodfilltrue=
     for /l %%y in (1,1,!game_board_size_y!) do (
         for /l %%x in (1,1,!game_board_size_x!) do (
