@@ -7,8 +7,8 @@
 ::
 
 :: Load ANSI before we SETLOCAL
-if exist %BATCH_DIRECTORY%Helpers\ANSI.cmd (
-    call %BATCH_DIRECTORY%Helpers\ANSI.cmd
+for %%x in (%BATCH_DIRECTORY%Helpers\ANSI.cmd %BATCH_DIRECTORY%..\Helpers\ANSI.cmd) do (
+    if exist "%%~x" call "%%~x"
 )
 
 setlocal enabledelayedexpansion enableextensions
@@ -19,8 +19,12 @@ set BATCH_NAME=%~n0
 :: If the BATCH_NAME (without extension) is a label in this file, then jump to 
 :: it. If BATCH_NAME is '%~n0' then the batchfile was called directly, so
 :: we need to check the first argument for a command via the :_ label.
+
 if "%~nx0" == "CliHelpers.cmd" call :_ %*
 if "%errorlevel%" neq "0" exit /b %errorlevel%
+
+:: Consider aliaes
+if "%BATCH_NAME%" == "delay" set BATCH_NAME=sleep
 
 :: See if we have a label that matches the command, if not, show help
 findstr /x /c:":CMD_%BATCH_NAME%" "%BATCH_DIRECTORY%%BATCH_FILE%" > nul 2>&1
@@ -33,6 +37,15 @@ if %ERRORLEVEL% neq 0 (
 :: If so, call it, passing the arguments, and exit with the return code
 call :CMD_%BATCH_NAME% %BATCH_ARGS%
 exit /b %ERRORLEVEL%
+
+:CMD_touch
+::CMD_touch Updates the last modified date of the file to the current date and time.
+    if "%~1" == "" call :HELP_%BATCH_NAME%&exit /b 1
+    for %%a in (%*) do (
+        echo Touching %%a
+        rem echo. 2> %%a
+    )
+    exit /b 0
 
 :HELP_touch
     echo.
@@ -49,25 +62,47 @@ exit /b %ERRORLEVEL%
     echo.
     exit /b 0
 
-:CheckIsAdmin
-    net session >nul 2>&1
-    if !errorlevel! == 0 (
-        exit /b 0
-    ) else (
-        exit /b 1
+:CMD_sleep
+::CMD_sleep Sleeps for the specified number of seconds, with optional countdown.
+    if "%1" == "" call :HELP_%BATCH_NAME%&exit /b 1
+    if "%~1" == "--count" (
+        set SLEEP_QUIET=1
+        echo.
+        shift
     )
-    exit /b 2
+    if "%1" == "" call :HELP_%BATCH_NAME%&exit /b 1
+    set /a "SLEEP_TIME=%~1"
 
-:CMD_touch
-::CMD_touch Updates the last modified date of the file to the current date and time.
-    if "%~1" == "" (
-        call :HELP_%BATCH_NAME%
-        exit /b 1
-    )
-    for %%a in (%*) do (
-        echo Touching %%a
-        rem echo. 2> %%a
-    )
+    :SLEEP_loop
+        if defined SLEEP_QUIET (
+            if !SLEEP_TIME! geq 60 (
+                call :TimeSecondsToHMS !SLEEP_TIME!
+                set TIME_STRING_LONG=!TIME_STRING_LONG! ^(!SLEEP_TIME! seconds^)
+            ) else (
+                set TIME_STRING_LONG=!SLEEP_TIME! seconds
+            )
+            echo %ANSI_cursor_move_up%!TIME_STRING_LONG! remaining...%ANSI_clear_line_right%
+        )
+        if !SLEEP_TIME! gtr 0 (
+            choice /t 1 /d y > nul
+            set CURRENT_TIME=%time:~0,8%
+            if not "!LAST_TIME!" == "!CURRENT_TIME!" set /a SLEEP_TIME-=1
+            set LAST_TIME=!CURRENT_TIME!
+            goto :SLEEP_loop
+        )
+    if defined SLEEP_QUIET echo %ANSI_cursor_move_up%%ANSI_clear_line_right%%ANSI_cursor_move_up%
+    exit /b 0
+
+:HELP_sleep
+    echo.
+    echo %ANSI_HEADER%sleep - Count down from a specified number of seconds.%ANSI_normal%
+    echo.
+    echo Usage: sleep [--quiet] ^(seconds^)
+    echo.
+    echo   Counts down from the specified number of seconds, ignoring negative numbers and strings.
+    echo.
+    echo   If %ANSI_emphasis%--count%ANSI_normal% is specified, the countdown will be shown.
+    echo.
     exit /b 0
 
 :CMD_dig
@@ -138,6 +173,7 @@ exit /b %ERRORLEVEL%
         )
     )
     exit /b 0
+    
 :CliHelpers_help
     if not "%~1" == "--just-commands" (
         echo.
@@ -184,3 +220,29 @@ exit /b %ERRORLEVEL%
     for /f "tokens=1* delims= " %%a in ("%*") do set "BATCH_NAME=%%a" & set "BATCH_ARGS=%%b"
 
     exit /b 0
+
+::Misc helper functions
+:CheckIsAdmin
+    net session >nul 2>&1
+    if !errorlevel! == 0 (
+        exit /b 0
+    ) else (
+        exit /b 1
+    )
+    exit /b 2
+
+:TimeSecondsToHMS
+    set /a TIME_REMAINING=%1
+    set /a "H=!TIME_REMAINING!/3600, M=(!TIME_REMAINING!-3600*H)/60, S=!TIME_REMAINING!-3600*H-60*M"
+    set "H=0%H%" & set "M=0%M%" & set "S=0%S%"
+    set "H=%H:~-2%" & set "M=%M:~-2%" & set "S=%S:~-2%"
+    set TIME_STRING=
+    set TIME_STRING_LONG=
+    if %H% gtr 0 set TIME_STRING=%H%:
+    if %M% gtr 0 set TIME_STRING=!TIME_STRING!%M%:
+    if %S% gtr 0 set TIME_STRING=!TIME_STRING!%S%s
+    if !TIME_REMAINING! geq 3600 set TIME_STRING_LONG=%H%:
+    if !TIME_REMAINING! geq 60 set TIME_STRING_LONG=!TIME_STRING_LONG!%M%:
+    if !TIME_REMAINING! geq 0 set TIME_STRING_LONG=!TIME_STRING_LONG!%S%
+    exit /b 0
+
