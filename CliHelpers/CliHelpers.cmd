@@ -89,9 +89,10 @@ exit /b %ERRORLEVEL%
         set NEEDED_ALIASES=!NEEDED_ALIASES! %%a
     )
     echo %ANSI_LOG_INFO%Checking %ANSI_emphasis%%BATCH_DIRECTORY%%ANSI_normal% for aliases...
-    echo .gitignore > %BATCH_DIRECTORY%.gitignore
+    echo %ANSI_LOG_INFO%Rewriting %ANSI_emphasis%.gitignore%ANSI_normal% to ignore the aliases.
+    echo .gitignore > "%BATCH_DIRECTORY%.gitignore"
     for %%x in (!NEEDED_ALIASES!) do (
-        echo %%x.cmd >> %BATCH_DIRECTORY%.gitignore
+        echo %%x.cmd >> "%BATCH_DIRECTORY%.gitignore"
         if exist "%BATCH_DIRECTORY%%%x.cmd" (
             for /f "usebackq tokens=3,4,5* delims=^<^>[] " %%f in (`dir "%BATCH_DIRECTORY%%%x.cmd" ^| find "%%x.cmd"`) do (
                 if "%%f" == "SYMLINK" (
