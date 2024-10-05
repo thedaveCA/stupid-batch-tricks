@@ -14,13 +14,10 @@
 ::
 :: Should you do this? No. But you could, and this is a proof of concept.
 ::
-:: Please don't use this in production. Please don't use batch in production.
-:: (says the guy writing batch in 2024).
-::
 :: Is there like a reverse-MIT license, where you're not allowed to use this
 :: code for anything, and if you do you're forbidden from giving me credit?
 
-:: TODO, stuff that is possibly broken, maybe could be improved?
+:: Stuff that is possibly broken, maybe could be improved?
 :: - Column width calculation is not perfect, but it's close enough.
 :: - Column width calculation does not handle strings of only spaces.
 :: - Column width calculation does not consider console buffer or window size.
@@ -29,8 +26,7 @@
 ::   Deciding what to truncate, when, and why? Not so easy.
 :: 
 :: - It would be possible to wrap individual fields into variable-height rows?
-::   Think about it, this is batch and we have a 2D array. There's no way to
-::   manipulate arrays, so... Add a dimension just to hold wrapped text? lol.
+::   Think about it, this is batch and we have a 2D array.
 ::
 ::   Field-based formatting could be fun. Or column/row highlights?
 ::
@@ -109,9 +105,6 @@ if not defined ANSI_header if not exist %~dp0..\Helpers\ANSI.cmd (
     echo ANSI.cmd not found. It is absolutely required for this script to run.
     exit /b 1
 ) else call %~dp0..\Helpers\ANSI.cmd
-
-:: Subroutines
-call %~dp0..\Helpers\ANSI.cmd
 
 :: Main
 call :rowCounter
