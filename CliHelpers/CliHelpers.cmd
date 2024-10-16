@@ -105,6 +105,65 @@ exit /b %ERRORLEVEL%
     echo.
     exit /b 0
 
+:CMD_ghcs
+::CMD_ghcs Explains a command using GitHub Copilot.
+    if "%~1" == "" (
+        set /p CLI_ARGS=Enter the command to explain: 
+    ) else (
+            set "CLI_ARGS=%*"
+            set CLI_ARGS=!CLI_ARGS:"=!
+    )
+    if "%CLI_ARGS%" == "" (
+        echo No command to explain, try `%~nx0 /?` for help
+        exit /b
+    )
+
+    gh copilot explain "%CLI_ARGS%"
+    exit /b 0
+
+:CMD_ghce
+::CMD_ghce Suggests a command suggested by GitHub Copilot, and executes it.
+    if "%~1" == "" (
+        set /p CLI_ARGS=Enter the command to explain: 
+    ) else (
+            set "CLI_ARGS=%*"
+            set CLI_ARGS=!CLI_ARGS:"=!
+    )
+    if "%CLI_ARGS%" == "" (
+        echo No command to explain, try `%~nx0 /?` for help
+        exit /b
+    )
+
+    set TMPFILE=%TEMP%\gh-copilot-suggest-%RANDOM%.txt
+    set TARGET=shell
+    gh copilot suggest -t "%TARGET%" "cmd.exe %CLI_ARGS%" --shell-out "!TMPFILE!"
+    if exist "!TMPFILE!" (
+        set /p CMD=<"!TMPFILE!"
+        call !CMD!
+        del "!TMPFILE!"
+    )
+    exit /b 0
+
+:HELP_ghcs
+    echo.
+    echo %ANSI_HEADER%ghcs - Explain a command using GitHub Copilot.%ANSI_normal%
+    echo.
+    echo Usage: ghcs ^(command^)
+    echo.
+    echo   Explains the command using GitHub Copilot.
+    echo.
+    exit /b 0
+
+:HELP_ghce
+    echo.
+    echo %ANSI_HEADER%ghce - Execute a command suggested by GitHub Copilot.%ANSI_normal%
+    echo.
+    echo Usage: ghce ^(command^)
+    echo.
+    echo   Executes the command suggested by GitHub Copilot.
+    echo.
+    exit /b 0
+    
 :CMD_dig
 ::CMD_dig Calls the dig command via WSL, passing the arguments.
     wsl dig %*
