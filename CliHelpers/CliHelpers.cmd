@@ -110,6 +110,11 @@ exit /b %ERRORLEVEL%
     wsl dig %*
     exit /b %ERRORLEVEL%
 
+:CMD_socat
+::CMD_dig Calls the socat command via WSL, passing the arguments.
+    wsl socat %*
+    exit /b %ERRORLEVEL%
+
 :CMD_echo
 ::CMD_echo Echoes the arguments to the console.
     echo %*
