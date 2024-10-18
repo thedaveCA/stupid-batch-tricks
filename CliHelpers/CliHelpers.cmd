@@ -165,12 +165,12 @@ exit /b %ERRORLEVEL%
     exit /b 0
     
 :CMD_dig
-::CMD_dig Calls the dig command via WSL, passing the arguments.
+::CMDwsl_dig DNS lookup utility.
     wsl dig %*
     exit /b %ERRORLEVEL%
 
 :CMD_socat
-::CMD_dig Calls the socat command via WSL, passing the arguments.
+::CMDwsl_socat socat - Multipurpose relay ^(SOcket CAT^)
     wsl socat %*
     exit /b %ERRORLEVEL%
 
@@ -182,7 +182,7 @@ exit /b %ERRORLEVEL%
 :: Try to make an alias for every command other than makealias itself
 :: Must be an administrator to create an alias.
 :CMD_makealias
-::CMD_makealias ^(Meta^) Creates aliases to this script as shortcuts in the filesystem. 
+::CMDmeta_makealias Creates aliases for direct commands and WSL commands.
     set NEEDED_ALIASES=%*
     if not defined NEEDED_ALIASES for /f "usebackq tokens=2 delims=_ " %%a in (`findstr /b /c:"::CMD_" "%BATCH_DIRECTORY%%BATCH_FILE%" 2^>nul ^| findstr /v /b /c:"::CMD_makealias" 2^>nul ^| sort`) do (
         set NEEDED_ALIASES=!NEEDED_ALIASES! %%a
@@ -239,7 +239,7 @@ exit /b %ERRORLEVEL%
     exit /b 0
     
 :CMD_AddToPath
-::CMD_AddToPath ^(Meta^) Adds the current directory to the user's PATH environment variable.
+::CMDmeta_AddToPath Adds the current directory to the user's PATH environment variable.
     if "%~1" == "user" (
         echo %ANSI_LOG_INFO%Adding to user PATH...
         setx PATH "%PATH%;%~dp0"
@@ -279,6 +279,16 @@ exit /b %ERRORLEVEL%
     set COLUMNWIDTH=20
     echo %ANSI_text_underline%Command%ANSI_normal%%ANSI_ESC%[G%ANSI_ESC%[!COLUMNWIDTH!C%ANSI_text_underline%Description%ANSI_normal%
     for /f "usebackq tokens=2* delims=_ " %%a in (`findstr /b /c:"::CMD_" "%BATCH_DIRECTORY%%BATCH_FILE%" 2^>nul ^| sort`) do (
+        echo %ANSI_emphasis%%%a%ANSI_normal%%ANSI_ESC%[G%ANSI_ESC%[!COLUMNWIDTH!C%%b
+    )
+    echo.
+    echo %ANSI_text_underline%WSL command%ANSI_normal%%ANSI_ESC%[G%ANSI_ESC%[!COLUMNWIDTH!C%ANSI_text_underline%Description%ANSI_normal%
+    for /f "usebackq tokens=2* delims=_ " %%a in (`findstr /b /c:"::CMDwsl_" "%BATCH_DIRECTORY%%BATCH_FILE%" 2^>nul ^| sort`) do (
+        echo %ANSI_emphasis%%%a%ANSI_normal%%ANSI_ESC%[G%ANSI_ESC%[!COLUMNWIDTH!C%%b
+    )
+    echo.
+    echo %ANSI_text_underline%meta command%ANSI_normal%%ANSI_ESC%[G%ANSI_ESC%[!COLUMNWIDTH!C%ANSI_text_underline%Description%ANSI_normal%
+    for /f "usebackq tokens=2* delims=_ " %%a in (`findstr /b /c:"::CMDmeta_" "%BATCH_DIRECTORY%%BATCH_FILE%" 2^>nul ^| sort`) do (
         echo %ANSI_emphasis%%%a%ANSI_normal%%ANSI_ESC%[G%ANSI_ESC%[!COLUMNWIDTH!C%%b
     )
     echo.
