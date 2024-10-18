@@ -124,7 +124,7 @@ exit /b %ERRORLEVEL%
 :CMD_ghce
 ::CMD_ghce Suggests a command suggested by GitHub Copilot, and executes it.
     if "%~1" == "" (
-        set /p CLI_ARGS=Enter the command to explain: 
+        set /p CLI_ARGS=Enter the requested task: 
     ) else (
             set "CLI_ARGS=%*"
             set CLI_ARGS=!CLI_ARGS:"=!
