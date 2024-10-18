@@ -35,7 +35,7 @@ if %ERRORLEVEL% neq 0 (
 )
 
 :: If so, call it, passing the arguments, and exit with the return code
-call :CMD_%BATCH_NAME% %BATCH_ARGS%
+call :CMD_%BATCH_NAME% %*
 exit /b %ERRORLEVEL%
 
 :CMD_touch
