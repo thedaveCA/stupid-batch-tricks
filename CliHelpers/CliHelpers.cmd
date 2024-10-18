@@ -238,8 +238,8 @@ exit /b %ERRORLEVEL%
     )
     exit /b 0
     
-:CMD_AddToPath
-::CMDmeta_AddToPath Adds the current directory to the user's PATH environment variable.
+:CMD_addtopath
+::CMDmeta_addtopath Adds the current directory to the user's PATH environment variable.
     if "%~1" == "user" (
         echo %ANSI_LOG_INFO%Adding to user PATH...
         setx PATH "%PATH%;%~dp0"
@@ -248,11 +248,11 @@ exit /b %ERRORLEVEL%
     endlocal & set "PATH=%PATH%"  
     exit /b 0
 
-:HELP_AddToPath
+:HELP_addtopath
     echo.
-    echo %ANSI_HEADER%AddToPath - Add the current directory to the user's PATH environment variable.%ANSI_normal%
+    echo %ANSI_HEADER%addtopath - Add the current directory to the user's PATH environment variable.%ANSI_normal%
     echo.
-    echo Usage: AddToPath ^(user^)
+    echo Usage: addtopath ^(user^)
     echo.
     echo   Adds the current directory to the user's PATH environment variable.
     echo.
