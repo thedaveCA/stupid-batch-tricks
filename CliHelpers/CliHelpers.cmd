@@ -66,7 +66,7 @@ exit /b %ERRORLEVEL%
 ::CMD_sleep Sleeps for the specified number of seconds, with optional countdown.
     if "%1" == "" call :HELP_%BATCH_NAME%&exit /b 1
     if "%~1" == "--count" (
-        set SLEEP_QUIET=1
+        set SLEEP_COUNTDOWN=1
         echo.
         shift
     )
@@ -74,7 +74,7 @@ exit /b %ERRORLEVEL%
     set /a "SLEEP_TIME=%~1"
 
     :SLEEP_loop
-        if defined SLEEP_QUIET (
+        if defined SLEEP_COUNTDOWN (
             if !SLEEP_TIME! geq 60 (
                 call :TimeSecondsToHMS !SLEEP_TIME!
                 set TIME_STRING_LONG=!TIME_STRING_LONG! ^(!SLEEP_TIME! seconds^)
@@ -97,7 +97,7 @@ exit /b %ERRORLEVEL%
     echo.
     echo %ANSI_HEADER%sleep - Count down from a specified number of seconds.%ANSI_normal%
     echo.
-    echo Usage: sleep [--quiet] ^(seconds^)
+    echo Usage: sleep [--count] ^(seconds^)
     echo.
     echo   Counts down from the specified number of seconds, ignoring negative numbers and strings.
     echo.
