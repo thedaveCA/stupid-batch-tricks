@@ -184,7 +184,7 @@ exit /b %ERRORLEVEL%
 :CMD_makealias
 ::CMDmeta_makealias Creates aliases for direct commands and WSL commands.
     set NEEDED_ALIASES=%*
-    if not defined NEEDED_ALIASES for /f "usebackq tokens=2 delims=_ " %%a in (`findstr /b /c:"::CMD_" "%BATCH_DIRECTORY%%BATCH_FILE%" 2^>nul ^| findstr /v /b /c:"::CMD_makealias" 2^>nul ^| sort`) do (
+    if not defined NEEDED_ALIASES for /f "usebackq tokens=2 delims=_ " %%a in (`findstr /b /c:"::CMD_" /c:"::CMDwsl_" "%BATCH_DIRECTORY%%BATCH_FILE%" 2^>nul ^| findstr /v /b /c:"::CMD_makealias" 2^>nul ^| sort`) do (
         set NEEDED_ALIASES=!NEEDED_ALIASES! %%a
     )
     echo %ANSI_LOG_INFO%Checking %ANSI_emphasis%%BATCH_DIRECTORY%%ANSI_normal% for aliases...
